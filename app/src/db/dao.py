@@ -59,15 +59,12 @@ def get_investors_by_name(name: str) -> list[Investor]:
     cursor = db_cnx.cursor(dictionary=True) # always pass dictionary = True
     sql: str = 'select * from investor where name = %s'
     cursor.execute(sql, (name,))
-    if cursor.rowcount == 0:
-        investors = []
-    else:
-        rows = cursor.fetchall()
-        for row in rows:
-            investors.append(Investor(row['name'], row['status'], row['id']))
+    rows = cursor.fetchall()
+    for row in rows:
+        investors.append(Investor(row['name'], row['status'], row['id']))
     db_cnx.close()
     return investors
-
+    
 
 def create_investor(investor: Investor) -> None:
     '''
@@ -132,27 +129,25 @@ def get_all_accounts() -> list[Account]:
         )
     cnx.close()
 
-def get_account_by_id(id: int) -> Account:
+def get_account_by_account_number(account_number: int) -> Account:
     # Code goes here
-    cnx = get_cnx()
-    cur = cnx.cursor(Dictionary=True)
-    cur.execute('Select account_number, investor_id, balance from account where id = %s')
-    rows = cur.fetchall()
-    if len(rows) == 0:
-        cnx.close()
-        return []
-    accounts = []
-    for row in rows:
-        accounts.append(
-            Account(row['id'], row['account_number'], row['balance'])
-        )
-    cnx.close()
+    db_cnx: MySQLConnection = get_cnx()
+    cursor = db_cnx.cursor(dictionary=True) # always pass dictionary = True
+    sql: str = 'select * from account where account_number = %s'
+    cursor.execute(sql, (account_number,))
+    if cursor.rowcount == 0:
+        return None
+    else:
+        row = cursor.fetchone()
+        account = Account(row['account_number'], row['investor_id'], row['balance'])
+        return account 
 
-def get_accounts_by_investor_id(id: int) -> list[Account]:
+
+def get_accounts_by_investor_id(investor_id: int) -> list[Account]:
     db_cnx: MySQLConnection = get_cnx()
     cur = db_cnx.cursor(dictionary=True)
-    sql = 'select account_number, investor_id, balance from account where investor_id = ?'
-    cur.execute(sql, (id, )) #rememeber a tuple of 1 needs an additional comma: (1) -> Not a tuple; (1,) -> a tuple
+    sql = 'select * from account where investor_id = %s'
+    cur.execute(sql, (investor_id,)) #rememeber a tuple of 1 needs an additional comma: (1) -> Not a tuple; (1,) -> a tuple
     rows = cur.fetchall()
     if len(rows) == 0:
         return []
@@ -244,12 +239,12 @@ def get_portfolios_by_investor_id(investor_id: int) -> list[Portfolio]:
     
     results: list[dict] = cur.fetchall()
 
-def delete_portfolio(id: int) -> None:
+def delete_portfolio(account_id: int, ticker:str) -> None:
     # code goes here
     cnx = get_cnx()
     cur = cnx.cursor()
-    sql = 'delete from portfolio where account_id = %s'
-    cur.execute(sql, (id,))
+    sql = 'delete from portfolio where account_id = %s and ticker = %s'
+    cur.execute(sql, (account_id, ticker))
     cnx.commit()
     cnx.close()
     pass
@@ -263,7 +258,7 @@ def buy_stock(ticker: str, price: float, quantity: int, account_number: int) -> 
     cnx.commit()
     cnx.close()
 
-def sell_stock(ticket: str, quantity: int, sale_price: float, account_number: int, balance: float) -> None:
+def sell_stock(ticker: str, quantity: int, sale_price: float, account_number: int, balance: float) -> None:
     # 1. update quantity in portfolio table
     # 2. update the account balance:
     # Example: 10 APPL shares at $1/share with account balance $100
@@ -271,10 +266,10 @@ def sell_stock(ticket: str, quantity: int, sale_price: float, account_number: in
     # output: 8 APPLE shares at $1/share with account balance = 100 + 2 * (12 - 10) = $104
     cnx = get_cnx()
     cur = cnx.cursor()
-    buy_stock(ticket, sale_price, quantity, account_number)
+    buy_stock(ticker, sale_price, quantity, account_number)
     new_balance = balance + quantity * sale_price
     update_acct_balance(account_number, new_balance)
     sql = 'update balance is new_balance = %s, where balance = %s, where quantity = %s, wher sale_price is %s'
-    cur.execute(sql, (ticket, quantity, sale_price, account_number, balance))
+    cur.execute(sql, (ticker, quantity, sale_price, account_number, balance))
     cnx.commit()
     cnx.close()
