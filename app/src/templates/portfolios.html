@@ -1,0 +1,27 @@
+<!doctype html>
+<title>Best Trade-Portfolios</title>
+
+<body>
+    <div>
+        <a href="/ui/">Home</a>
+    </div>
+    <div>
+        <h1>Portfolios Page</h1>
+    </div>
+    <table>
+        <tr>
+            <th>Account ID</th>
+            <th>Ticker</th>
+            <th>Quantity</th>
+            <th>Purchase Price</th>
+        </tr>
+        {% for portfolio in portfolios %}
+        <tr>
+            <td>{{  portfolio.account_id  }}</td>
+            <td>{{  portfolio.ticker  }}</td>
+            <td>{{  portfolio.quantity  }}</td>
+            <td>{{  portfolio.purchase_price  }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
